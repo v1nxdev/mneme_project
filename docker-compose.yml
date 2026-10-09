@@ -1,0 +1,36 @@
+services:
+  app:
+    build: .
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      PORT: "3000"
+      NODE_ENV: development
+      MONGODB_URI: mongodb://mongo:27017/mneme
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    command: npm run dev
+    init: true
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+  mongo:
+    image: mongo:8
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.adminCommand('ping').ok ? 0 : 1)"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+volumes:
+  node_modules:
+  mongo_data:
